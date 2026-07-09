@@ -1,6 +1,6 @@
 'use server'
 
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase-server';
 
 // Interface for TMDB movie data
 export interface TMDBMovie {
@@ -32,51 +32,72 @@ export async function addMovieToDB(movie: TMDBMovie) {
   const releaseYear = movie.release_date ? parseInt(movie.release_date.substring(0, 4)) : null;
   const posterUrl = movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : null;
 
-  const { error } = await supabase
-    .from('movies')
-    .insert([
-      {
-        title: movie.title,
-        year: releaseYear,
-        poster_url: posterUrl,
-        status: 'planned' 
-      }
-    ]);
+  try {
+    const supabaseServer = await createClient();
 
-  if (error) {
-    console.error("Error saving movie:", error);
-    return { success: false };
-  }
+    const { error } = await supabaseServer
+      .from('movies')
+      .insert([
+        {
+          title: movie.title,
+          year: releaseYear,
+          poster_url: posterUrl,
+          status: 'planned' 
+        }
+      ]);
 
-  return { success: true };
+    if (error) {
+      console.error("Error saving movie:", error.message);
+      return { success: false };
+    }
+
+    return { success: true };
+  } catch (err) {
+  console.error("Critical actions error:", err);
+  return { success: false };
+}
 }
 
 // Delete a movie from Supabase by ID
 export async function deleteMovie(id: number) {
-  const { error } = await supabase
-    .from('movies')
-    .delete()
-    .eq('id', id);
+  try {
+    const supabaseServer = await createClient();
 
-  if (error) {
-    console.error("Error deleting movie:", error);
-    return { success: false };
-  }
+    const { error } = await supabaseServer
+      .from('movies')
+      .delete()
+      .eq('id', id);
 
-  return { success: true };
+    if (error) {
+      console.error("Error deleting movie:", error.message);
+      return { success: false };
+    }
+
+    return { success: true };
+  } catch (err) {
+  console.error("Critical actions error:", err);
+  return { success: false };
+}
 }
 
 // Update movie status
 export async function updateMovieStatus(id: number, status: string) {
-  const { error } = await supabase
-    .from('movies')
-    .update({ status })
-    .eq('id', id);
+  try {
+    const supabaseServer = await createClient();
 
-  if (error) {
-    console.error("Error updating status:", error);
-    return { success: false };
-  }
+    const { error } = await supabaseServer
+      .from('movies')
+      .update({ status })
+      .eq('id', id);
 
-  return { success: true };
+    if (error) {
+      console.error("Error updating status:", error.message);
+      return { success: false };
+    }
+
+    return { success: true };
+  } catch (err) {
+  console.error("Critical actions error:", err);
+  return { success: false };
+}
 }
