@@ -15,7 +15,8 @@ export default async function Home() {
     .select('*');
 
   if (error) {
-    console.error('Error fetching movies:', error);
+    console.error('Error fetching movies:', JSON.stringify(error, null, 2));
+    console.log('Current Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
   }
 
   return (
