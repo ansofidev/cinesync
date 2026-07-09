@@ -16,11 +16,7 @@ export default function LoginPage() {
     setIsLoading(true);
     setError(null);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setError(error.message);
       setIsLoading(false);
@@ -35,17 +31,30 @@ export default function LoginPage() {
     setIsLoading(true);
     setError(null);
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-
+    const { error } = await supabase.auth.signUp({ email, password });
     if (error) {
       setError(error.message);
     } else {
       setError('Registration successful! Check your email or try logging in.');
     }
     setIsLoading(false);
+  };
+
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+
+    if (error) {
+      setError(error.message);
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -86,7 +95,7 @@ export default function LoginPage() {
               disabled={isLoading || !email || !password}
               className="flex-1 bg-white text-black font-medium py-2 rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-50"
             >
-              {isLoading ? '...' : 'Sign In'}
+              Sign In
             </button>
             <button
               onClick={handleSignUp}
@@ -100,10 +109,11 @@ export default function LoginPage() {
 
         <div className="mt-6 border-t border-zinc-800 pt-6">
           <button
-            type="button"
-            className="w-full flex items-center justify-center gap-2 bg-zinc-800 text-white font-medium py-2 rounded-lg hover:bg-zinc-700 transition-colors"
+            onClick={handleGoogleLogin}
+            disabled={isLoading}
+            className="w-full flex items-center justify-center gap-2 bg-zinc-800 text-white font-medium py-2 rounded-lg hover:bg-zinc-700 transition-colors disabled:opacity-50"
           >
-            Continue with Google
+            {isLoading ? '...' : 'Continue with Google'}
           </button>
         </div>
       </div>
