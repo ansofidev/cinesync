@@ -1,54 +1,52 @@
-import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
-
-export interface Movie {
-  id: string;
-  title: string;
-  poster_url: string;
-  year: number;
-  status: string;
-}
+import Image from 'next/image';
+import DeleteButton from '@/components/DeleteButton';
 
 export default async function Home() {
   const { data: movies, error } = await supabase
     .from('movies')
-    .select('*');
+    .select('*')
+    .order('created_at', { ascending: false });
 
   if (error) {
     console.error('Error fetching movies:', JSON.stringify(error, null, 2));
-    console.log('Current Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-8">
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-        {movies?.map((movie: Movie) => (
-          <div 
-            key={movie.id} 
-            className="bg-zinc-900 rounded-xl overflow-hidden border border-zinc-800 transition-transform hover:scale-105"
-          >
-            <Image 
-              src={movie.poster_url} 
-              alt={movie.title} 
-              width={500}
-              height={750}
-              className="w-full h-auto aspect-2/3 object-cover"
-            />
-            
-            <div className="p-4">
-              <h2 className="font-semibold text-lg leading-tight mb-1 truncate">
-                {movie.title}
-              </h2>
-              <div className="flex items-center justify-between text-zinc-400 text-sm">
-                <span>{movie.year}</span>
-                <span className="px-2 py-1 bg-zinc-800 rounded-md text-xs">
-                  {movie.status === 'planned' ? 'Planned' : 'Watched'}
-                </span>
+    <div className="min-h-screen bg-[#0a0a0a]">
+      <main className="max-w-6xl mx-auto px-8 py-12">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+          {movies?.map((movie) => (
+            <div key={movie.id} className="relative bg-zinc-900 rounded-xl overflow-hidden border border-zinc-800 transition-transform hover:scale-105 group">
+              
+              <DeleteButton id={movie.id} />
+
+              {movie.poster_url ? (
+                <Image
+                  src={movie.poster_url}
+                  alt={movie.title}
+                  width={500}
+                  height={750}
+                  className="w-full h-auto aspect-[2/3] object-cover"
+                />
+              ) : (
+                <div className="w-full aspect-[2/3] bg-zinc-800 flex items-center justify-center text-zinc-500 text-sm text-center p-4">
+                  No poster available
+                </div>
+              )}
+              
+              <div className="absolute bottom-0 w-full p-4 bg-gradient-to-t from-black/90 to-transparent">
+                <div className="flex items-center justify-between mt-2">
+                  <span className="text-xs text-zinc-400">{movie.year}</span>
+                  <span className="text-xs font-medium px-2 py-1 bg-white/10 rounded-full text-white backdrop-blur-md">
+                    {movie.status}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      </main>
     </div>
   );
 }
