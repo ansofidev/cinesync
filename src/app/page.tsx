@@ -1,10 +1,15 @@
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase-server';
 import Image from 'next/image';
 import DeleteButton from '@/components/DeleteButton';
 import StatusToggle from '@/components/StatusToggle';
 
 export default async function Home() {
-  const { data: movies, error } = await supabase
+  const supabaseServer = await createClient();
+
+  const { data: { user } } = await supabaseServer.auth.getUser();
+  const isAuthenticated = !!user;
+
+  const { data: movies, error } = await supabaseServer
     .from('movies')
     .select('*')
     .order('created_at', { ascending: false });
@@ -19,8 +24,8 @@ export default async function Home() {
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
           {movies?.map((movie, index) => (
             <div key={movie.id} className="relative bg-zinc-900 rounded-xl overflow-hidden border border-zinc-800 transition-transform hover:scale-105 group">
-              
-              <DeleteButton id={movie.id} />
+
+              {isAuthenticated && <DeleteButton id={movie.id} />}
 
               {movie.poster_url ? (
                 <Image
@@ -40,7 +45,17 @@ export default async function Home() {
               <div className="absolute bottom-0 w-full p-4 bg-linear-to-t from-black/90 to-transparent">
                 <div className="flex items-center justify-between mt-2">
                   <span className="text-xs text-zinc-400">{movie.year}</span>
-                  <StatusToggle id={movie.id} initialStatus={movie.status} />
+
+                  {isAuthenticated ? (
+                    <StatusToggle id={movie.id} initialStatus={movie.status} />
+                  ) : (
+                    <span className={`text-xs font-medium px-2 py-1 rounded-full backdrop-blur-md ${
+                      movie.status === 'watched' ? 'bg-green-500/20 text-green-400' : 'bg-white/10 text-white'
+                    }`}>
+                      {movie.status}
+                    </span>
+                  )}
+                  
                 </div>
               </div>
             </div>
