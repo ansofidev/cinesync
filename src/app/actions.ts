@@ -65,3 +65,18 @@ export async function deleteMovie(id: number) {
 
   return { success: true };
 }
+
+// Update movie status
+export async function updateMovieStatus(id: number, status: string) {
+  const { error } = await supabase
+    .from('movies')
+    .update({ status })
+    .eq('id', id);
+
+  if (error) {
+    console.error("Error updating status:", error);
+    return { success: false };
+  }
+
+  return { success: true };
+}
