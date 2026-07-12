@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { searchMovies, addMovieToDB, type TMDBMovie } from '@/app/actions';
 
@@ -9,11 +9,24 @@ export default function SearchBox() {
   const [results, setResults] = useState<TMDBMovie[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   const router = useRouter();
   const pathname = usePathname();
 
   const currentRoomId = pathname.startsWith('/room/') ? pathname.split('/')[2] : undefined;
+
+  useEffect(() => {
+    const handleToggle = () => setIsSidebarOpen(prev => !prev);
+    window.addEventListener('toggle-sidebar', handleToggle);
+    return () => window.removeEventListener('toggle-sidebar', handleToggle);
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsSidebarOpen(false);
+  }, [pathname]);
 
   const handleSearch = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -63,9 +76,9 @@ export default function SearchBox() {
   };
 
   return (
-    <>
+    <div className={`transition-all duration-300 ${isSidebarOpen ? 'hidden md:block' : 'block'}`}>
       {toastMsg && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-zinc-900 border border-pink-500 text-white px-6 py-3 rounded-full shadow-[0_0_20px_rgba(236,72,153,0.3)] z-[100] transition-all animate-in fade-in slide-in-from-top-4 font-medium text-sm flex items-center gap-2">
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-zinc-900 border border-pink-500 text-white px-6 py-3 rounded-full shadow-[0_0_20px_rgba(236,72,153,0.3)] z-100 transition-all animate-in fade-in slide-in-from-top-4 font-medium text-sm flex items-center gap-2">
           <span>🤗</span>
           {toastMsg}
         </div>
@@ -78,7 +91,7 @@ export default function SearchBox() {
           onChange={handleSearch}
           disabled={isSearching}
           placeholder={isSearching ? "Adding..." : "Search movies..."}
-          className="bg-zinc-900 text-white text-sm rounded-full px-4 py-1.5 focus:outline-none focus:ring-2 focus:ring-pink-500 w-64 border border-zinc-700 placeholder-zinc-500 disabled:opacity-50 transition-all"
+          className="bg-zinc-900 text-white text-sm rounded-full px-4 py-1.5 focus:outline-none focus:ring-2 focus:ring-pink-500 w-full sm:w-64 border border-zinc-700 placeholder-zinc-500 disabled:opacity-50 transition-all"
         />
         {results.length > 0 && (
           <div className="absolute top-full mt-2 w-full bg-zinc-900 rounded-lg shadow-2xl border border-zinc-800 overflow-hidden z-50">
@@ -99,6 +112,6 @@ export default function SearchBox() {
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 }

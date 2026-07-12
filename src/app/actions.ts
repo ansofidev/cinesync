@@ -29,6 +29,7 @@ export async function searchMovies(query: string) {
 }
 
 // Save a movie to Supabase
+// Save a movie to Supabase (БЕЗ ложных срабатываний на дубликаты)
 export async function addMovieToDB(movie: TMDBMovie, roomId?: string) {
   const releaseYear = movie.release_date ? parseInt(movie.release_date.substring(0, 4)) : null;
   const posterUrl = movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : null;
@@ -43,7 +44,7 @@ export async function addMovieToDB(movie: TMDBMovie, roomId?: string) {
     }
 
     let query = supabaseServer.from('movies').select('id').eq('title', movie.title);
-    
+
     if (roomId) {
       query = query.eq('room_id', roomId);
     } else {
