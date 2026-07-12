@@ -100,4 +100,58 @@ export async function updateMovieStatus(id: number, status: string) {
   console.error("Critical actions error:", err);
   return { success: false };
 }
+
+}
+// Get all rooms for the current user
+export async function getUserRooms() {
+  try {
+    const supabaseServer = await createClient();
+    const { data: { user } } = await supabaseServer.auth.getUser();
+    if (!user) return [];
+
+    // Fetch rooms by joining with room_members table
+    const { data, error } = await supabaseServer
+      .from('rooms')
+      .select('*, room_members!inner(user_id)')
+      .eq('room_members.user_id', user.id)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error("Error fetching rooms:", error.message);
+      return [];
+    }
+
+    return data || [];
+  } catch {
+    return [];
+  }
+}
+
+// Create a new room and automatically add the creator as a member
+export async function createRoom(name: string) {
+  try {
+    const supabaseServer = await createClient();
+    const { data: { user } } = await supabaseServer.auth.getUser();
+    if (!user) return { success: false, error: "Not logged in" };
+
+    // 1. Create the room itself
+    const { data: room, error: roomError } = await supabaseServer
+      .from('rooms')
+      .insert([{ name, created_by: user.id }])
+      .select()
+      .single();
+
+    if (roomError) return { success: false, error: roomError.message };
+
+    // 2. Add the creator to the room_members table
+    const { error: memberError } = await supabaseServer
+      .from('room_members')
+      .insert([{ room_id: room.id, user_id: user.id }]);
+
+    if (memberError) return { success: false, error: memberError.message };
+
+    return { success: true, room };
+  } catch {
+    return { success: false, error: "Server error" };
+  }
 }
