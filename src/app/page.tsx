@@ -2,17 +2,31 @@ import { createClient } from '@/lib/supabase-server';
 import Image from 'next/image';
 import DeleteButton from '@/components/DeleteButton';
 import StatusToggle from '@/components/StatusToggle';
+import MovieFilter from '@/components/MovieFilter';
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string }>;
+}) {
+  const resolvedParams = await searchParams;
+  const status = resolvedParams.status || 'all';
+
   const supabaseServer = await createClient();
 
   const { data: { user } } = await supabaseServer.auth.getUser();
   const isAuthenticated = !!user;
 
-  const { data: movies, error } = await supabaseServer
+  let query = supabaseServer
     .from('movies')
     .select('*')
     .order('created_at', { ascending: false });
+
+  if (status === 'planned' || status === 'watched') {
+    query = query.eq('status', status);
+  }
+
+  const { data: movies, error } = await query;
 
   if (error) {
     console.error('Error fetching movies:', JSON.stringify(error, null, 2));
@@ -21,6 +35,9 @@ export default async function Home() {
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
       <main className="max-w-6xl mx-auto px-8 py-12">
+        
+        <MovieFilter />
+
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
           {movies?.map((movie, index) => (
             <div key={movie.id} className="relative bg-zinc-900 rounded-xl overflow-hidden border border-zinc-800 transition-transform hover:scale-105 group">
@@ -60,6 +77,13 @@ export default async function Home() {
               </div>
             </div>
           ))}
+
+          {movies?.length === 0 && (
+            <div className="col-span-full text-center py-12 text-zinc-500">
+              No movies found in this category.
+            </div>
+          )}
+
         </div>
       </main>
     </div>
