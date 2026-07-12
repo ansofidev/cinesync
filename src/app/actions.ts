@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase-server';
+import { revalidatePath } from 'next/cache';
 
 // Interface for TMDB movie data
 export interface TMDBMovie {
@@ -28,12 +29,32 @@ export async function searchMovies(query: string) {
 }
 
 // Save a movie to Supabase
-export async function addMovieToDB(movie: TMDBMovie) {
+export async function addMovieToDB(movie: TMDBMovie, roomId?: string) {
   const releaseYear = movie.release_date ? parseInt(movie.release_date.substring(0, 4)) : null;
   const posterUrl = movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : null;
 
   try {
     const supabaseServer = await createClient();
+    const { data: { user } } = await supabaseServer.auth.getUser();
+    
+    if (!user) {
+      console.error("User not authenticated");
+      return { success: false };
+    }
+
+    let query = supabaseServer.from('movies').select('id').eq('title', movie.title);
+    
+    if (roomId) {
+      query = query.eq('room_id', roomId);
+    } else {
+      query = query.eq('user_id', user.id).is('room_id', null);
+    }
+
+    const { data: existingMovie } = await query.maybeSingle();
+
+    if (existingMovie) {
+      return { success: false, duplicate: true };
+    }
 
     const { error } = await supabaseServer
       .from('movies')
@@ -42,7 +63,9 @@ export async function addMovieToDB(movie: TMDBMovie) {
           title: movie.title,
           year: releaseYear,
           poster_url: posterUrl,
-          status: 'planned' 
+          status: 'planned',
+          user_id: user.id,
+          room_id: roomId || null
         }
       ]);
 
@@ -51,11 +74,17 @@ export async function addMovieToDB(movie: TMDBMovie) {
       return { success: false };
     }
 
+    if (roomId) {
+      revalidatePath(`/room/${roomId}`);
+    } else {
+      revalidatePath('/');
+    }
+
     return { success: true };
   } catch (err) {
-  console.error("Critical actions error:", err);
-  return { success: false };
-}
+    console.error("Critical actions error:", err);
+    return { success: false };
+  }
 }
 
 // Delete a movie from Supabase by ID

@@ -1,11 +1,26 @@
 'use client'
 
-import { Popcorn, BookOpen, Plus, LogIn, Film } from 'lucide-react'
+import { Popcorn, BookOpen, Plus, LogIn, Film, Hash } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import CreateRoomModal from './CreateRoomModal'
 
-export default function Sidebar({ isAuthenticated }: { isAuthenticated: boolean }) {
+interface Room {
+  id: string
+  name: string
+  type: string 
+  invite_code: string
+}
+
+export default function Sidebar({ 
+  isAuthenticated, 
+  initialRooms 
+}: { 
+  isAuthenticated: boolean
+  initialRooms: Room[] 
+}) {
   const [isOpen, setIsOpen] = useState(false)
+  const [modalType, setModalType] = useState<'movies' | 'books' | null>(null)
 
   useEffect(() => {
     const handleToggle = () => setIsOpen(prev => !prev)
@@ -16,55 +31,128 @@ export default function Sidebar({ isAuthenticated }: { isAuthenticated: boolean 
   return (
     <>
       {isOpen && (
-        <div onClick={() => setIsOpen(false)} className="fixed inset-0 bg-black/60 backdrop-blur-xs z-30 transition-opacity" />
+        <div
+          onClick={() => setIsOpen(false)}
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-30 transition-opacity"
+        />
       )}
 
-      <aside className={`fixed top-0 right-0 h-full w-full sm:w-80 flex flex-col justify-between border-l border-zinc-800 bg-[#0a0a0a] p-6 z-40 transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isOpen ? 'translate-x-0 shadow-2xl' : 'translate-x-full'}`}>
-        
+      <aside
+        className={`fixed top-0 right-0 h-full w-full sm:w-80 flex flex-col justify-between border-l border-zinc-800 bg-[#0a0a0a] p-6 z-40 transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isOpen ? "translate-x-0 shadow-2xl" : "translate-x-full"}`}
+      >
         {isAuthenticated ? (
           <>
-            <div className="mt-20">
-              <h1 className="text-4xl font-black mb-10 tracking-tighter text-transparent bg-clip-text bg-linear-to-r from-pink-500 to-violet-500 uppercase">
+            <div className="mt-20 flex flex-col h-[calc(100%-100px)]">
+              <h1 className="text-4xl font-black mb-6 tracking-tighter text-transparent bg-clip-text bg-linear-to-r from-pink-500 to-violet-500 uppercase">
                 CINESYNC
               </h1>
-              
-              <nav className="space-y-3 mb-8">
-                <div className="md:hidden border-b border-zinc-800 pb-3 mb-3 space-y-2">
-                  <Link href="/" onClick={() => setIsOpen(false)} className="flex items-center gap-4 w-full p-3 rounded-xl hover:bg-zinc-900 text-zinc-400 hover:text-white font-medium transition-all">
-                    <Film className="w-5 h-5" />
+
+              <div className="flex-1 overflow-y-auto pr-1 space-y-6 no-scrollbar">
+                <div className="md:hidden border-b border-zinc-800 pb-3 space-y-1">
+                  <Link
+                    href="/"
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center gap-4 w-full p-2.5 rounded-xl hover:bg-zinc-900 text-zinc-400 hover:text-white font-medium transition-all text-sm"
+                  >
+                    <Film className="w-4 h-4" />
                     <span>Browse Movies</span>
                   </Link>
-                  <Link href="/books" onClick={() => setIsOpen(false)} className="flex items-center gap-4 w-full p-3 rounded-xl hover:bg-zinc-900 text-zinc-400 hover:text-white font-medium transition-all">
-                    <BookOpen className="w-5 h-5" />
+                  <Link
+                    href="/books"
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center gap-4 w-full p-2.5 rounded-xl hover:bg-zinc-900 text-zinc-400 hover:text-white font-medium transition-all text-sm"
+                  >
+                    <BookOpen className="w-4 h-4" />
                     <span>Browse Books</span>
                   </Link>
                 </div>
 
-                <button className="flex items-center gap-4 w-full p-4 rounded-xl bg-pink-500/10 text-pink-500 font-bold transition-all border border-pink-500/20 hover:bg-pink-500/20 cursor-pointer">
-                  <Popcorn className="w-6 h-6" />
-                  <span className="text-lg">Movie Syncs</span>
-                </button>
-                
-                <button className="flex items-center gap-4 w-full p-4 rounded-xl hover:bg-zinc-900 font-medium transition-all text-zinc-500 hover:text-zinc-200 cursor-pointer">
-                  <BookOpen className="w-6 h-6" />
-                  <span className="text-lg">Book Syncs</span>
-                </button>
-              </nav>
+                <div>
+                  <div className="flex items-center justify-between text-pink-500 font-bold text-sm mb-3 px-2">
+                    <div className="flex items-center gap-2">
+                      <Popcorn className="w-4 h-4" />
+                      <span>Movie Syncs</span>
+                    </div>
+                    <button
+                      onClick={() => setModalType("movies")}
+                      className="p-1 hover:bg-zinc-800 rounded-md text-zinc-500 hover:text-pink-500 transition-colors cursor-pointer"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="space-y-1 mb-6">
+                    {initialRooms
+                      .filter((r) => r.type === "movies")
+                      .map((room) => (
+                        <Link
+                          key={room.id}
+                          href={`/room/${room.id}`}
+                          onClick={() => setIsOpen(false)}
+                          className="flex items-center gap-3 w-full p-2.5 rounded-xl hover:bg-zinc-900 text-zinc-400 hover:text-zinc-200 text-left transition-all text-sm cursor-pointer truncate"
+                        >
+                          <Hash className="w-4 h-4 shrink-0 text-zinc-600" />
+                          <span className="truncate">{room.name}</span>
+                        </Link>
+                      ))}
+                    {initialRooms.filter((r) => r.type === "movies").length ===
+                      0 && (
+                      <p className="text-xs text-zinc-600 px-2 italic">
+                        No movie rooms
+                      </p>
+                    )}
+                  </div>
+                </div>
 
-              <button className="flex items-center justify-center gap-2 w-full p-4 rounded-xl bg-pink-600 text-white font-bold hover:bg-pink-500 transition-all hover:scale-105 active:scale-95 text-lg cursor-pointer">
-                <Plus className="w-6 h-6" />
-                Create Sync
-              </button>
+                <div>
+                  <div className="flex items-center justify-between text-purple-500 font-bold text-sm mb-3 px-2">
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="w-4 h-4" />
+                      <span>Book Syncs</span>
+                    </div>
+                    <button
+                      onClick={() => setModalType("books")}
+                      className="p-1 hover:bg-zinc-800 rounded-md text-zinc-500 hover:text-purple-500 transition-colors cursor-pointer"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="space-y-1">
+                    {initialRooms
+                      .filter((r) => r.type === "books")
+                      .map((room) => (
+                        <Link
+                          key={room.id}
+                          href={`/room/${room.id}`}
+                          onClick={() => setIsOpen(false)}
+                          className="flex items-center gap-3 w-full p-2.5 rounded-xl hover:bg-zinc-900 text-zinc-400 hover:text-zinc-200 text-left transition-all text-sm cursor-pointer truncate"
+                        >
+                          <Hash className="w-4 h-4 shrink-0 text-zinc-600" />
+                          <span className="truncate">{room.name}</span>
+                        </Link>
+                      ))}
+                    {initialRooms.filter((r) => r.type === "books").length ===
+                      0 && (
+                      <p className="text-xs text-zinc-600 px-2 italic">
+                        No book rooms
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="mb-4">
+            <div className="mb-4 shrink-0">
               <div className="flex items-center gap-4 p-4 rounded-xl bg-zinc-900/50 border border-zinc-800 cursor-pointer hover:bg-zinc-800 transition-all group">
                 <div className="w-12 h-12 rounded-full bg-linear-to-tr from-pink-500 to-violet-500 flex items-center justify-center text-white font-black text-xl shadow-lg">
                   U
                 </div>
                 <div className="flex-1 overflow-hidden">
-                  <p className="text-base font-bold truncate text-white group-hover:text-pink-400 transition-colors">My Profile</p>
-                  <p className="text-sm text-zinc-500 truncate">Settings & Log out</p>
+                  <p className="text-base font-bold truncate text-white group-hover:text-pink-400 transition-colors">
+                    My Profile
+                  </p>
+                  <p className="text-sm text-zinc-500 truncate">
+                    Settings & Log out
+                  </p>
                 </div>
               </div>
             </div>
@@ -76,11 +164,19 @@ export default function Sidebar({ isAuthenticated }: { isAuthenticated: boolean 
                 CINESYNC
               </h1>
               <div className="md:hidden space-y-2 border-b border-zinc-800 pb-4 mb-4">
-                <Link href="/" onClick={() => setIsOpen(false)} className="flex items-center gap-4 w-full p-3 rounded-xl hover:bg-zinc-900 text-zinc-400 hover:text-white font-medium transition-all">
+                <Link
+                  href="/"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-4 w-full p-3 rounded-xl hover:bg-zinc-900 text-zinc-400 hover:text-white font-medium transition-all"
+                >
                   <Film className="w-5 h-5" />
                   <span>Movies</span>
                 </Link>
-                <Link href="/books" onClick={() => setIsOpen(false)} className="flex items-center gap-4 w-full p-3 rounded-xl hover:bg-zinc-900 text-zinc-400 hover:text-white font-medium transition-all">
+                <Link
+                  href="/books"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-4 w-full p-3 rounded-xl hover:bg-zinc-900 text-zinc-400 hover:text-white font-medium transition-all"
+                >
                   <BookOpen className="w-5 h-5" />
                   <span>Books</span>
                 </Link>
@@ -92,9 +188,11 @@ export default function Sidebar({ isAuthenticated }: { isAuthenticated: boolean 
                 <LogIn className="w-8 h-8" />
               </div>
               <h3 className="text-xl font-bold mb-2">Welcome to CineSync</h3>
-              <p className="text-sm text-zinc-500 mb-8">Log in to create private sync rooms and track your history.</p>
-              
-              <Link 
+              <p className="text-sm text-zinc-500 mb-8">
+                Log in to create private sync rooms and track your history.
+              </p>
+
+              <Link
                 href="/login"
                 onClick={() => setIsOpen(false)}
                 className="flex items-center justify-center gap-2 w-full p-4 rounded-xl bg-pink-600 text-white font-bold hover:bg-pink-500 transition-all text-lg shadow-lg cursor-pointer"
@@ -105,8 +203,11 @@ export default function Sidebar({ isAuthenticated }: { isAuthenticated: boolean 
             <div />
           </div>
         )}
-
       </aside>
+
+      {modalType && (
+        <CreateRoomModal type={modalType} onClose={() => setModalType(null)} />
+      )}
     </>
-  )
+  );
 }
